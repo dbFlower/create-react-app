@@ -45,7 +45,12 @@ const {
 } = require('react-dev-utils/WebpackDevServerUtils');
 const openBrowser = require('react-dev-utils/openBrowser');
 const paths = require('../config/paths');
-const config = require('../config/webpack.config.dev');
+
+// Inject webpack here.
+const customConfig = require('../app.config');
+const injectConfig = require('./utils/injectConfig');
+const config = injectConfig(require('../config/webpack.config.dev'), customConfig);
+
 const createDevServerConfig = require('../config/webpackDevServer.config');
 
 const useYarn = fs.existsSync(paths.yarnLockFile);

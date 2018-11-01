@@ -36,7 +36,12 @@ const chalk = require('chalk');
 const fs = require('fs-extra');
 const webpack = require('webpack');
 const bfj = require('bfj');
-const config = require('../config/webpack.config.prod');
+
+// Inject webpack here.
+const customConfig = require('../app.config');
+const injectConfig = require('./utils/injectConfig');
+const config = injectConfig(require('../config/webpack.config.prod'), customConfig);
+
 const paths = require('../config/paths');
 const checkRequiredFiles = require('react-dev-utils/checkRequiredFiles');
 const formatWebpackMessages = require('react-dev-utils/formatWebpackMessages');

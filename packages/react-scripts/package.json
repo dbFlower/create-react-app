@@ -1,6 +1,7 @@
 {
-  "name": "react-scripts",
-  "version": "2.1.0",
+  "name": "@chipcoo/react-scripts",
+  "version": "2.1.1-beta1",
+  "react-scripts-version": "2.1.0",
   "description": "Configuration and scripts for Create React App.",
   "repository": "facebook/create-react-app",
   "license": "MIT",
@@ -17,7 +18,8 @@
     "scripts",
     "template",
     "template-typescript",
-    "utils"
+    "utils",
+    "template-public"
   ],
   "bin": {
     "react-scripts": "./bin/react-scripts.js"
@@ -45,6 +47,7 @@
     "eslint-plugin-import": "2.14.0",
     "eslint-plugin-jsx-a11y": "6.1.2",
     "eslint-plugin-react": "7.11.1",
+    "extra-watch-webpack-plugin": "^1.0.3",
     "file-loader": "2.0.0",
     "fork-ts-checker-webpack-plugin-alt": "0.4.14",
     "fs-extra": "7.0.0",
@@ -53,6 +56,7 @@
     "jest": "23.6.0",
     "jest-pnp-resolver": "1.0.1",
     "jest-resolve": "23.6.0",
+    "lodash": "latest",
     "mini-css-extract-plugin": "0.4.3",
     "optimize-css-assets-webpack-plugin": "5.0.1",
     "pnp-webpack-plugin": "1.1.0",
@@ -64,12 +68,14 @@
     "react-dev-utils": "^6.1.0",
     "resolve": "1.8.1",
     "sass-loader": "7.1.0",
+    "strip-css-comments": "^3.0.0",
     "style-loader": "0.23.0",
     "terser-webpack-plugin": "1.1.0",
     "url-loader": "1.1.1",
     "webpack": "4.19.1",
     "webpack-dev-server": "3.1.9",
     "webpack-manifest-plugin": "2.0.4",
+    "webpack-merge": "^4.1.4",
     "workbox-webpack-plugin": "3.6.3"
   },
   "devDependencies": {

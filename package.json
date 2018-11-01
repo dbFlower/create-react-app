@@ -51,5 +51,8 @@
     "yarn.lock": [
       "git rm --cached"
     ]
+  },
+  "dependencies": {
+    "less-loader": "^4.1.0"
   }
 }

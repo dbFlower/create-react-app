@@ -99,6 +99,7 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test',
     eject: 'react-scripts eject',
+    tests: 'react-scripts nul'
   };
 
   // Setup the eslint config
@@ -120,6 +121,16 @@ module.exports = function(
       path.join(appPath, 'README.md'),
       path.join(appPath, 'README.old.md')
     );
+  }
+
+  // Copy common files for the user 
+  const publicPath = path.join(ownPath, 'template-public');
+  if (fs.existsSync(publicPath)) {
+    fs.copySync(publicPath, appPath)
+  } else {
+    console.error(
+      `Copy public file failed: ${chalk.green(publicPath)}`
+    )
   }
 
   // Copy the files for the user
