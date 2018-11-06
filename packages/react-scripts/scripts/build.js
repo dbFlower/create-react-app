@@ -27,8 +27,8 @@ const verifyPackageTree = require('./utils/verifyPackageTree');
 if (process.env.SKIP_PREFLIGHT_CHECK !== 'true') {
   verifyPackageTree();
 }
-const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
-verifyTypeScriptSetup();
+// const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
+// verifyTypeScriptSetup();
 // @remove-on-eject-end
 
 const path = require('path');
@@ -36,13 +36,12 @@ const chalk = require('chalk');
 const fs = require('fs-extra');
 const webpack = require('webpack');
 const bfj = require('bfj');
-
+const paths = require('../config/paths');
 // Inject webpack here.
-const customConfig = require('../app.config');
-const injectConfig = require('./utils/injectConfig');
+const customConfig = require(path.resolve(paths.appPath,'app.config'));
+const injectConfig = require('../utils/injectConfig');
 const config = injectConfig(require('../config/webpack.config.prod'), customConfig);
 
-const paths = require('../config/paths');
 const checkRequiredFiles = require('react-dev-utils/checkRequiredFiles');
 const formatWebpackMessages = require('react-dev-utils/formatWebpackMessages');
 const printHostingInstructions = require('react-dev-utils/printHostingInstructions');

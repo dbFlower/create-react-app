@@ -27,8 +27,8 @@ const verifyPackageTree = require('./utils/verifyPackageTree');
 if (process.env.SKIP_PREFLIGHT_CHECK !== 'true') {
   verifyPackageTree();
 }
-const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
-verifyTypeScriptSetup();
+// const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
+// verifyTypeScriptSetup();
 // @remove-on-eject-end
 
 const fs = require('fs');
@@ -44,13 +44,14 @@ const {
   prepareUrls,
 } = require('react-dev-utils/WebpackDevServerUtils');
 const openBrowser = require('react-dev-utils/openBrowser');
+const path = require('path');
 const paths = require('../config/paths');
 
 // Inject webpack here.
-const customConfig = require('../app.config');
-const injectConfig = require('./utils/injectConfig');
+const customConfig = require(path.resolve(paths.appPath, 'app.config'));
+const injectConfig = require('../utils/injectConfig');
 const config = injectConfig(require('../config/webpack.config.dev'), customConfig);
-
+// fs.writeFileSync(path.resolve(paths.appPath, `debug-${new Date().getTime()}.json`), JSON.stringify(config, null, 2), { charset: 'utf-8' })
 const createDevServerConfig = require('../config/webpackDevServer.config');
 
 const useYarn = fs.existsSync(paths.yarnLockFile);
@@ -116,7 +117,7 @@ checkBrowsers(paths.appPath, isInteractive)
         return console.log(err);
       }
       if (isInteractive) {
-        clearConsole();
+        // clearConsole();
       }
       console.log(chalk.cyan('Starting the development server...\n'));
       openBrowser(urls.localUrlForBrowser);

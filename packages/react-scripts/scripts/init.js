@@ -99,7 +99,8 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test',
     eject: 'react-scripts eject',
-    tests: 'react-scripts nul'
+    dll: 'cross-env --NODE_ENV=development react-scripts dll',
+    'dll-prod': 'cross-env --NODE_ENV=production react-scripts dll'
   };
 
   // Setup the eslint config

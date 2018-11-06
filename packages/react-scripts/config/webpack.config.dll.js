@@ -1,46 +1,44 @@
 const webpack = require('webpack');
+const merge =require('webpack-merge');
 const path = require('path');
 const paths = require('./paths');
-const entry = require('../app.config').dll
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+const { dll } = require(path.resolve(paths.appPath, 'app.config'))
+const resolveDllConfig = require('../utils/resolveDllConfig')
 
-let type = process.env.DLL_TYPE;
+const isProd = process.env.NODE_ENV === 'production'
+const type = isProd ? 'prod' : 'dev'
 
-const dirPath = path.join(paths.appDll, type);
+const { entry, output } = dll
+const dllOutput = resolveDllConfig(output, isProd, paths.appPath)
 
 const dllConfig = {
+  mode: isProd ? 'production' : 'development',
   output: {
-    path: dirPath,
-    filename: type === 'prod' ? 'front.[name].[chunkhash:8].dll.js' : '[name].dll.js',
+    ...dllOutput,
     library: `cw_[name]_dll`
   },
   entry,
   plugins: [
     new webpack.DllPlugin({
-      path: path.join(dirPath, '[name].manifest.json'),
+      path: path.join(dllOutput.path, '[name].manifest.json'),
       // 注意这里需要和上面哪个output里面的library保持一直，不然会报错找不到引用
       name: `cw_[name]_dll`
     })
   ]
 };
 
-// 如果是生产，那么打包出来的vendor还需要压缩一下
+// 如果是生产环境，将vendor压缩输出。
+// See: https://webpack.js.org/configuration/optimization/#src/components/Sidebar/Sidebar.jsx
 if (type === 'prod') {
-  dllConfig.plugins.push(
-    new webpack.optimize.UglifyJsPlugin({
-      // 最紧凑的输出
-      beautify: false,
-      // 删除所有的注释
-      comments: false,
-      compress: {
-        // 在UglifyJs删除没有用到的代码时不输出警告
-        warnings: false,
-        // 删除所有的console的语句
-        drop_console: true,
-        // 提取出出现多次但是没有定义成变量去引用的静态值
-        reduce_vars: true
-      }
-    })
-  );
+  merge(dllConfig, {
+    optimization: {
+      minimize: true,
+      minimizer: [
+        new UglifyJsPlugin({}),        
+      ]
+    }
+  })
 }
 
 module.exports = dllConfig;
