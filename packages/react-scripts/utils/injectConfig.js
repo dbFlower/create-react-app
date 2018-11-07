@@ -7,8 +7,9 @@ const TsConfigPathsWebpackPlugin = require('tsconfig-paths-webpack-plugin')
 const ExtraWatchWebpackPlugin = require('extra-watch-webpack-plugin')
 const AddAssetHtmlPlugin = require('add-asset-html-webpack-plugin')
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
-const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin-alt');
+const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin')
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin-alt')
+const { isPlainObject } = require('lodash')
 
 const paths = require('../config/paths')
 const injectCSS = require('./injectCSS')
@@ -30,6 +31,7 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     mergeStrategies, 
     beforeFileLoader,
     dllPublicPath,
+    urlLoaderOptions,
   } = config
   
   // Add polyfill to entry.
@@ -51,9 +53,7 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     entry: [polyfill],
     resolve: {
       plugins: [
-        new TsConfigPathsWebpackPlugin({ 
-          mainFields: ['main', '']
-        })
+        new TsConfigPathsWebpackPlugin()
       ]
     }
   })
@@ -76,12 +76,22 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     return [fileLoaderPath, 'file-loader'].some(p => p === lastLoader || p === lastLoader.loader)
   })
 
+  // let babelLoader
+  let urlLoader
+  let oneOf
+
   // Modify oneOf
   if (find) {
-    const { oneOf } = find
+    oneOf = find.oneOf
     const fileLoader = oneOf.pop()
+    // add loaders.
     oneOf.push(...beforeFileLoader || [])
     oneOf.push(fileLoader)
+    // const babelLoaderPath = require.resolve('babel-loader')
+    const urlLoaderPath = require.resolve('url-loader')
+    // babelLoader = oneOf.find(loader => [babelLoaderPath, 'babel-loader'].some(it => loader === it || loader.loader === it))
+    urlLoader = oneOf.find(loader => [urlLoader, 'url-loader'].some(it => loader === it || loader.loader === it))
+    
   }
 
   // Handle css variable files.
@@ -94,13 +104,15 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
   if (cssVarFiles.length) {
     injectCSS(webpackConfig, cssVarFiles)
     // Add css variable files hot reload.
-    webpackConfig = merge(webpackConfig, {
-      plugins: [
-        new ExtraWatchWebpackPlugin({
-          files: cssVarFiles
-        })
-      ]
-    })
+    if (isDev) {
+      webpackConfig = merge(webpackConfig, {
+        plugins: [
+          new ExtraWatchWebpackPlugin({
+            files: cssVarFiles
+          })
+        ]
+      })      
+    }
   }
   
   const { output } = dll
@@ -120,11 +132,14 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
   }
 
   files.forEach(file => {
+    // Find dll manifest file.
     if (/\.json$/.test(file)) {
       dllPlugins.push(new webpack.DllReferencePlugin({
         manifest: path.join(dllPath, file),
       }))
     }
+
+    // Find dll output file.
     if (/\.js$/.test(file)) {
       dllJsFiles.push(file)
     }
@@ -141,8 +156,26 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
       }))
     })
 
+    const entryConfig = {}
+
+    // Add babel-loader plugin for react-hot-loader support.
+    // if (babelLoader && isPlainObject(babelLoader)) {
+    //   entryConfig.entry = 'react-hot-loader/patch'
+
+    //   if (!babelLoader.options) babelLoader.options = {}
+    //   if (!babelLoader.options.plugins) babelLoader.options.plugins = []
+    //   if (!babelLoader.options.cacheDirectory) babelLoader.options.cacheDirectory = true
+
+    //   babelLoader.options.plugins.push('react-hot-loader/babel')
+    //   console.log(babelLoader.test.toString())
+    // } else {
+    //   console.warn(chalk.yellow('[React-hot-loader]: Babel-loader is not found or is not a plain object.'))
+    //   console.warn(chalk.yellow('Thus react-hot-loader won\'t work.'))
+    //   console.warn(chalk.yellow('Please report this bug.'))
+    // }
+
     webpackConfig = merge.strategy({ entry: 'prepend' })(webpackConfig, {
-      entry: 'react-hot-loader/patch',
+      ...entryConfig,
       plugins: dllPlugins.concat(assetsPlugins),
     })
   }
@@ -180,5 +213,5 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     })
   }
 
-  return (injectWebpack && injectWebpack(webpackConfig, process.env.NODE_ENV, paths)) || webpackConfig;
+  return (injectWebpack && injectWebpack(webpackConfig, process.env.NODE_ENV, paths)) || webpackConfig
 }

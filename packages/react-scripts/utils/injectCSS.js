@@ -1,57 +1,35 @@
-const path = require('path')
-const getLessVariables = require('./getLessVariables')
 const { isPlainObject } = require('lodash')
 const merge = require('webpack-merge')
 const webpack = require('webpack')
+const chalk = require('chalk')
+const getLessVariables = require('./getLessVariables')
+const findAndFormatLoader = require('./findAndFormatLoader')
 
 const lessFiles = ['a.less', 'a.module.less']
-const stylusFiles = ['a.stylus', 'a.module.stylus']
 const sassFiles = ['a.sass', 'a.scss', 'a.module.sass', 'a.module.scss']
 
 const lessRegex = /\.less$/
 const stylRegex = /\.styl$/
 const sassRegex = /\.(sass|scss)$/
 
-function warn(loaderName) {
-  console.warn(`[Inject CSS]: No ${loaderName}-loader find, please report this bug`)
-}
-
-function findAndFormatLoader(rule, paths) {
-  const [ path ] = paths
-  if (paths.some(path => path === rule.use)) {
-    rule.use = [{ loader: path, options: {}, }]
-
-    return rule.use[0]
-  }
-
-  if (Array.isArray(rule.use)) {
-    const find = rule.use.find(loader => paths.some(path => path === loader || path === loader.loader))
-
-    if (!find) return
-
-    if (typeof find === 'string') {
-      const index = rule.use.indexOf(find)
-      rule.use[index] = { loader: path, options: {} }
-
-      return rule.use[index]
-    }
-
-    if (isPlainObject(find)) {
-      find.options = find.options || {}
-
-      return find
-    }
-  }
-
-  return 
+function showLoaderWarn(loaderName) {
+  // Show loader missing warning.  
+  const prefix = chalk.magenta('[Inject CSS Variables]')
+  console.warn(`${prefix}: ${chalk.green(loaderName + '-loader')} is missing, but ${chalk.green(loaderName)} file used.`)
+  console.warn(chalk.red('It may cause some confused problems, please install loader and CSS pre-processor manually.'))
 }
 
 function handleLess(rule, list) {
-  const lessLoaderPath = require.resolve('less-loader')
-  const loader = findAndFormatLoader(rule, [lessLoaderPath, 'less-loader'])
+  let loader 
+  try {
+    const lessLoaderPath = require.resolve('less-loader')
+    loader = findAndFormatLoader(rule, [lessLoaderPath, 'less-loader'])
+  } catch (e) {
+    return showLoaderWarn('less')
+  }
 
   if (!loader) {
-    return warn('less')
+    return showLoaderWarn('less')
   }
 
   const { options } = loader
@@ -62,25 +40,38 @@ function handleLess(rule, list) {
   })
 }
 
-function handleStylus(rule, list) {
-  const stylusLoaderPath = require.resolve('stylus-loader')
-  const loader = findAndFormatLoader(rule, [stylusLoaderPath, 'stylus-loader'])
-  
-  if (!loader) {
-    return warn('stylus') 
+function handleStylus(webpackConfig, list) {
+  try {
+    require.resolve('stylus-loader')
+  } catch (e) {
+    showLoaderWarn('stylus')
+
+    return webpackConfig
   }
 
-  const { options } = loader
-  options.import = options.import || []
-  options.import.push(...list)
+  return merge(webpackConfig, {
+    plugins: [
+      new webpack.LoaderOptionsPlugin({
+        test: /\.styl$/,
+        stylus: {
+          import: list,
+        },
+      })
+    ]
+  })
 }
 
 function handleSass(rule, list) {
-  const sassLoaderPath = require.resolve('sass-loader')
-  const loader = findAndFormatLoader(rule, [sassLoaderPath, 'sass-loader'])
+  let loader 
+  try {
+    const sassLoaderPath = require.resolve('sass-loader')
+    loader = findAndFormatLoader(rule, [sassLoaderPath, 'sass-loader'])
+  } catch (e) {
+    return showLoaderWarn('sass') 
+  }
 
   if (!loader) {
-    return warn('sass') 
+    return showLoaderWarn('sass')
   }
 
   const { options } = loader
@@ -94,27 +85,21 @@ function handleSass(rule, list) {
   options.data += list.map(file => `@import "${file}";`).join('\n')
 }
 
-const testRule = (regs, str) => {
-  if (!Array.isArray(regs)) regs = [regs]
+const testRule = (tests, str) => {
+  if (!Array.isArray(tests)) tests = [tests]
 
-  return regs.some(rule => rule.test(str))
+  return tests.some(rule => rule.test(str))
 }
 
-function loop(rules, { lessList, stylusList, sassList }) {
-  rules.forEach((rule, i) => {
+function loop(rules, { lessList, sassList }) {
+  rules.forEach((rule) => {
     if (!rule.test && !rule.oneOf) return false
-    if (rule.oneOf) return loop(rule.oneOf, { lessList, stylusList, sassList })
+    if (rule.oneOf) return loop(rule.oneOf, { lessList, sassList })
 
     if (lessFiles.some(f => testRule(rule.test, f))) {
       // handle less
       lessList.length && handleLess(rule, lessList)
       return 
-    }
-
-    if (stylusFiles.some(f => testRule(rule.test, f))) {
-      // handle stylus 
-      stylusList.length && handleStylus(rule, stylusList)
-      return
     }
 
     if (sassFiles.some(f => testRule(rule.test, f))) {
@@ -149,17 +134,7 @@ module.exports = function injectCSS(webpackConfig, cssVariables) {
   loop(rules, { lessList, sassList })
 
   if (stylusList.length) {
-    webpackConfig = merge(webpackConfig, {
-      plugins: [
-        new webpack.LoaderOptionsPlugin({
-          options: {
-            stylus: {
-              import: stylusList
-            }
-          }
-        })
-      ]
-    })
+    webpackConfig = handleStylus(webpackConfig, stylusList)
   }
 
   return webpackConfig

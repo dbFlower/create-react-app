@@ -44,13 +44,17 @@ module.exports = {
       ],
     },
   },
+  // Assign url-loader options.
+  urlLoaderOptions: {
+    limit: 2048,
+  },
   beforeFileLoader: [
     {
       test: /\.(ts|tsx)$/,
       include: paths.appSrc,
       use: [
         {
-          loader: 'babel-loader'
+          loader: 'babel-loader',
         },
         {
           loader: require.resolve('ts-loader'),

@@ -22,7 +22,7 @@ const isProd = process.env.NODE_ENV === 'production'
 const shouldUseSourceMap = process.env.GENERATE_SOURCEMAP !== 'false';
 const useSourceMap = !isProd || shouldUseSourceMap
 
-const getStyleLoaders = (cssOptions = {}, preProcessor, sourceMap = useSourceMap) => {
+const getStyleLoaders = function getStyleLoaders(cssOptions = {}, preProcessor, sourceMap = useSourceMap) {
   const options = {}
   let secondLoader = {
     loader: require.resolve('css-loader'),
