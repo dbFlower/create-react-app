@@ -141,7 +141,8 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
       }))
     })
 
-    webpackConfig = merge(webpackConfig, {
+    webpackConfig = merge.strategy({ entry: 'prepend' })(webpackConfig, {
+      entry: 'react-hot-loader/patch',
       plugins: dllPlugins.concat(assetsPlugins),
     })
   }

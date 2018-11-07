@@ -31,11 +31,10 @@ const getStyleLoaders = (cssOptions = {}, preProcessor, sourceMap = useSourceMap
       ...cssOptions,
     }
   }
-  if (cssOptions.module) {
+  if (cssOptions.modules) {
     Object.assign(options, {
       namedExport: true,
       camelCase: true,
-      modules: true,
     })
 
     secondLoader = {

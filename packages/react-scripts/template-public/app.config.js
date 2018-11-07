@@ -87,7 +87,7 @@ module.exports = {
     {
       test: lessModuleRegex,
       exclude: lessRegex,
-      use: getStyleLoaders({ module: true }, 'less-loader'),
+      use: getStyleLoaders({ modules: true }, 'less-loader'),
     },
     {
       test: stylusRegex,
@@ -97,7 +97,7 @@ module.exports = {
     {
       test: stylusModuleRegex,
       exclude: stylusRegex,
-      use: getStyleLoaders({ module: true }, 'stylus-loader'),
+      use: getStyleLoaders({ modules: true }, 'stylus-loader'),
     },
   ],
   // Merge webpack config strategies. 
