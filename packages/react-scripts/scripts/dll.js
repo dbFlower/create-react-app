@@ -23,17 +23,13 @@ const chalk = require('chalk')
 const fs = require('fs-extra')
 const webpack = require('webpack')
 const bfj = require('bfj')
-const paths = require('../config/paths')
-
-const config = require('../config/webpack.config.dll')
-
-const checkRequiredFiles = require('react-dev-utils/checkRequiredFiles')
 const formatWebpackMessages = require('react-dev-utils/formatWebpackMessages')
-const printHostingInstructions = require('react-dev-utils/printHostingInstructions')
 const FileSizeReporter = require('react-dev-utils/FileSizeReporter')
-const printBuildError = require('react-dev-utils/printBuildError')
 const { checkBrowsers } = require('react-dev-utils/browsersHelper')
-const useYarn = fs.existsSync(paths.yarnLockFile)
+
+const paths = require('../config/paths')
+const config = require('../config/webpack.config.dll')
+const logger = require('../utils/logger')
 
 // These sizes are pretty large. We'll warn for bundles exceeding them.
 const WARN_AFTER_BUNDLE_GZIP_SIZE = 512 * 1024
@@ -75,8 +71,7 @@ checkBrowsers(paths.appPath, isInteractive)
       console.log(chalk.green('Generated successfully.\n'))
     }
     
-    console.log('File sizes after gzip:\n')
-    console.log(config.output)
+    logger.info('File sizes after gzip:\n')
 
     printFileSizesAfterBuild(
       stats,
@@ -94,7 +89,7 @@ checkBrowsers(paths.appPath, isInteractive)
   })
 
 function createDll(previousSize) {
-  console.log('Building dll now...')
+  logger('Building dll now...')
 
   let compiler = webpack(config)
 

@@ -138,27 +138,32 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     }
   }
   
+  let dllPath
+
   const dllJsFiles = []
   const dllPlugins = []
   
   const { output, entry } = dll
   // If dll entry is not empty.
   if (!isEmptyEntry(entry)) {
+    let files = []
     const dllOutput = resolveDllConfig(output, isProd, paths.appPath)
-    const dllPath = dllOutput.path
-    const files = fs.readdirSync(dllPath)
+    dllPath = dllOutput.path
+
+    if (fs.existsSync(dllPath)) {
+      files = fs.readdirSync(dllPath)
+    }
 
     if (files.length === 0) {
       const cmdBin = useYarn ? 'yarn' : 'npm run'
       const cmd = isProd ? 'dll-prod' : 'dll'
 
-      log.error(
+      logger.error(
         [
-          chalk.red('No dll files found, please run this command:'),
-          chalk.cyan(`${cmdBin} ${cmd}`),
+          chalk.red('No dll files found, please run this command: ') + chalk.cyan(`${cmdBin} ${cmd}`),
         ]
       )
-      throw new Error('Dll not found error.')
+      process.exit(1)
     }
 
     files.forEach(file => {
