@@ -11,16 +11,31 @@ const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plug
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin-alt')
 const { isPlainObject } = require('lodash')
 
+const logger = require('./logger')
+const findAndFormatLoader = require('./findAndFormatLoader')
 const paths = require('../config/paths')
 const injectCSS = require('./injectCSS')
 const { dll } = require(path.resolve(paths.appPath, 'app.config'))
 const resolveDllConfig = require('./resolveDllConfig')
 
-
 const resolvePath = (_path) => path.resolve(paths.appPath, _path)
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
 const useYarn = fs.existsSync(path.join(paths.appPath, 'yarn.lock'))
+
+function isEmptyEntry(entry) {
+  if (!entry) return true
+
+  if (Array.isArray(entry)) {
+    return entry.length > 0
+  }
+
+  if (isPlainObject(entry)) {
+    return Object.entries(entry).some(it => !isEmptyEntry(it))
+  }
+
+  return false
+}
 
 module.exports = function injectConfig(webpackConfig, config = {}) {
   const { 
@@ -42,7 +57,7 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
   const lastPlugin = plugins.pop()
 
   if (lastPlugin instanceof ForkTsCheckerWebpackPlugin) {
-    console.log(chalk.green('ForkTsCheckerWebpackPlugin was removed by injectConfig.js'))
+    logger.info('ForkTsCheckerWebpackPlugin was removed by injectConfig.js')
   } else {
     plugins.push(lastPlugin)
   }
@@ -89,9 +104,17 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     oneOf.push(fileLoader)
     // const babelLoaderPath = require.resolve('babel-loader')
     const urlLoaderPath = require.resolve('url-loader')
-    // babelLoader = oneOf.find(loader => [babelLoaderPath, 'babel-loader'].some(it => loader === it || loader.loader === it))
-    urlLoader = oneOf.find(loader => [urlLoader, 'url-loader'].some(it => loader === it || loader.loader === it))
+    // babelLoader = findAndFormatLoader(oneOf, [babelLoaderPath, 'babel-loader'])
+    urlLoader = findAndFormatLoader(oneOf, [urlLoaderPath, 'url-loader'])
     
+    if (urlLoader) {
+      Object.assign(urlLoader.options, urlLoaderOptions || {})
+    } else {
+      const keyLen = Object.keys(urlLoaderOptions || {}).length
+      if (keyLen > 0) {
+        logger.error(`${chalk.bold('url-loader')} options is detected, but can\'t find ${chalk.bold('url-loader')} rule. ${chalk.red('Please report this bug.')}`)
+      }
+    }
   }
 
   // Handle css variable files.
@@ -115,35 +138,43 @@ module.exports = function injectConfig(webpackConfig, config = {}) {
     }
   }
   
-  const { output } = dll
-  const dllOutput = resolveDllConfig(output, isProd, paths.appPath)
-  const dllPath = dllOutput.path
-  const files = fs.readdirSync(dllPath)
   const dllJsFiles = []
   const dllPlugins = []
+  
+  const { output, entry } = dll
+  // If dll entry is not empty.
+  if (!isEmptyEntry(entry)) {
+    const dllOutput = resolveDllConfig(output, isProd, paths.appPath)
+    const dllPath = dllOutput.path
+    const files = fs.readdirSync(dllPath)
 
-  if (files.length === 0) {
-    const cmdBin = useYarn ? 'yarn' : 'npm run'
-    const cmd = isProd ? 'dll-prod' : 'dll'
+    if (files.length === 0) {
+      const cmdBin = useYarn ? 'yarn' : 'npm run'
+      const cmd = isProd ? 'dll-prod' : 'dll'
 
-    console.error(chalk.red('No dll files found, please run this command:'))
-    console.error(chalk.cyan(`${cmdBin} ${cmd}`))
-    throw new Error('')
+      log.error(
+        [
+          chalk.red('No dll files found, please run this command:'),
+          chalk.cyan(`${cmdBin} ${cmd}`),
+        ]
+      )
+      throw new Error('Dll not found error.')
+    }
+
+    files.forEach(file => {
+      // Find dll manifest file.
+      if (/\.json$/.test(file)) {
+        dllPlugins.push(new webpack.DllReferencePlugin({
+          manifest: path.join(dllPath, file),
+        }))
+      }
+
+      // Find dll output file.
+      if (/\.js$/.test(file)) {
+        dllJsFiles.push(file)
+      }
+    })
   }
-
-  files.forEach(file => {
-    // Find dll manifest file.
-    if (/\.json$/.test(file)) {
-      dllPlugins.push(new webpack.DllReferencePlugin({
-        manifest: path.join(dllPath, file),
-      }))
-    }
-
-    // Find dll output file.
-    if (/\.js$/.test(file)) {
-      dllJsFiles.push(file)
-    }
-  })
 
   // Add dev only config
   if (isDev) {

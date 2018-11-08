@@ -1,14 +1,14 @@
 const path = require('path')
 const { isFunction, isString } = require('lodash')
 
-function resolveDllConfig(config, isProd, pathPrefix) {
+function resolveDllConfig(outputConfig = {}, isProd, pathPrefix) {
   const type = isProd ? 'prod' : 'dev'
   const output = {
-    filename: '',
-    path: '',
+    filename: isProd ? 'front.[name].[chunkhash:8].dll.js' : '[name].dll.js',
+    path: `dll/${isProd ? 'prod' : 'dev'}`,
   }
 
-  const { filename, pathTemplate } = config
+  const { filename, pathTemplate } = outputConfig
 
   if (isString(filename)) {
     output.filename = filename

@@ -1,9 +1,9 @@
-const { isPlainObject } = require('lodash')
 const merge = require('webpack-merge')
 const webpack = require('webpack')
 const chalk = require('chalk')
 const getLessVariables = require('./getLessVariables')
 const findAndFormatLoader = require('./findAndFormatLoader')
+const logger = require('./logger')
 
 const lessFiles = ['a.less', 'a.module.less']
 const sassFiles = ['a.sass', 'a.scss', 'a.module.sass', 'a.module.scss']
@@ -13,10 +13,21 @@ const stylRegex = /\.styl$/
 const sassRegex = /\.(sass|scss)$/
 
 function showLoaderWarn(loaderName) {
-  // Show loader missing warning.  
-  const prefix = chalk.magenta('[Inject CSS Variables]')
-  console.warn(`${prefix}: ${chalk.green(loaderName + '-loader')} is missing, but ${chalk.green(loaderName)} file used.`)
-  console.warn(chalk.red('It may cause some confused problems, please install loader and CSS pre-processor manually.'))
+  // Show loader missing warning.
+  logger.warn(
+    [
+      `${chalk.green(loaderName + '-loader')} is missing, but ${chalk.green(loaderName)} file used.`,
+      `It may cause some confused problems, please ${chalk.bold('install loader and CSS pre-processor')} manually.`
+    ]
+  )
+}
+
+function showError(loaderName) {
+  logger.error(
+    [
+      `${chalk.green(loaderName + '-loader')} is installed, but ${chalk.bold('can\'t')} find the rule. ${chalk.red('Please report this bug.')}`
+    ]
+  )
 }
 
 function handleLess(rule, list) {
@@ -29,7 +40,7 @@ function handleLess(rule, list) {
   }
 
   if (!loader) {
-    return showLoaderWarn('less')
+    return showError('less')
   }
 
   const { options } = loader
@@ -71,7 +82,7 @@ function handleSass(rule, list) {
   }
 
   if (!loader) {
-    return showLoaderWarn('sass')
+    return showError('sass')
   }
 
   const { options } = loader

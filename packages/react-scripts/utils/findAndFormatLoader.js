@@ -1,17 +1,20 @@
-function findAndFormatLoader(rule, paths) {
-  const [ path ] = paths
-  if (paths.some(path => path === rule.use)) {
+const { isPlainObject } = require('lodash')
+
+function findAndFormatLoader(rule, loaderPaths) {
+  const [ path ] = loaderPaths
+  if (loaderPaths.some(path => path === rule.use)) {
     rule.use = [{ loader: path, options: {}, }]
 
     return rule.use[0]
   }
 
-  // Support CRA confusing usage of Rule.loader
+  // Support loaders passed as first argument.
+  // Support CRA confusing usage of Rule.loader (rule.use || rule.loader) both supported now.
   // See: https://github.com/facebook/create-react-app/issues/5736
-  const loaders = rule.use || rule.loader
+  const loaders = Array.isArray(rule) ? rule : (rule.use || rule.loader)
 
   if (Array.isArray(loaders)) {
-    const find = loaders.find(loader => paths.some(path => path === loader || path === loader.loader))
+    const find = loaders.find(loader => loaderPaths.some(path => path === loader || path === loader.loader))
 
     if (!find) return
 
